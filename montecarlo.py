@@ -13,31 +13,72 @@ c01 = loadsqmat('jla_v0a_covmatrix.dat')
 c02 = loadsqmat('jla_v0b_covmatrix.dat')
 c12 = loadsqmat('jla_vab_covmatrix.dat')
 
-def log_likelihood(th, x, yz, yerr):
+def log_likelihood(th, x, zdat, yerr):
     alpha, beta, mb1, dm = th
     shape, color, mstellar = x['x1'], x['color'], x['mb']
 
     n = len(x['x1'])
     model = getmodel(alpha, beta, mb1, dm)
-    y_model = model(mstellar, shape, color)
-    distlum = cosmo.luminosity_distance(yz)
+
+    distlum = cosmo.luminosity_distance(zdat)
+    mudat = 5 * np.log(distlum / (10 * u.pc)) - 5
 
     mb = x['mb']
     eta = np.column_stack((x['mb'], x['x1'], x['color'])).ravel()
-    cstat = c00 @ np.ones(3, 3)
+
+    cstat = np.block([
+        [c00, c01, c02],
+        [c01, c11, c12],
+        [c02, c12, c22]
+    ])
     ceta = cstat
+
     id = np.identity(n)
-    a = np.tensordot(id, np.array([ 1, alpha, -beta ]))
+    a = np.tensordot(id, np.array([ 1, alpha, -beta ]), axes = 0).reshape(n, 3 * n)
+
     c = a @ ceta @ a.T
-    y = 5 * np.log(distlum / (10 * u.pc)) - 5
-
     mu = a @ eta - mb
+    res = mu - mudat
+    xi = mu @ c @ mu.T
 
-    return -0.5 * np.sum(chi2 + np.log(sigma2))
+    return -0.5 * xi
+
+def log_slikelihood(th, x, zdat, yerr):
+    alpha, beta, mb1, dm = th
+    shape, color, mstellar = x['x1'], x['color'], x['mb']
+
+    n = len(x['x1'])
+    model = getmodel(alpha, beta, mb1, dm)
+
+    distlum = cosmo.luminosity_distance(zdat)
+    mudat = 5 * np.log(distlum / (10 * u.pc)) - 5
+
+    mb = x['mb']
+    eta = np.column_stack((x['mb'], x['x1'], x['color'])).ravel()
+
+    cstat = np.block([
+        [c00, c01, c02],
+        [c01, c11, c12],
+        [c02, c12, c22]
+    ])
+    ceta = cstat
+
+    id = np.identity(n)
+    a = np.tensordot(id, np.array([ 1, alpha, -beta ]), axes = 0).reshape(n, 3 * n)
+
+    c = a @ ceta @ a.T
+    mu = a @ eta - mb
+    res = mu - mudat
+    xi = mu @ c @ mu.T
+
+    return -0.5 * xi
 
 def log_prior(th):
     alpha, beta, mb1, dm = th
-    return 0.0
+    if 0.0 < alpha < 0.2 and 2.5 < beta < 3.5 and -0.2 < dm < 0.1 and -20 < mb1 < -18:
+        return 0.0
+    else:
+        return -np.inf
 
 def log_probability(th, x, y, yerr):
     lp = log_prior(th)
@@ -48,7 +89,14 @@ def log_probability(th, x, y, yerr):
 def adjustparams(df):
     dim = 4
     walkers = 8
-    pos = 0.5 + 1 * np.random.randn(walkers, dim)
+    pos = np.zeros((walkers, dim))
+
+    mean = [0, 3, -19, -0.15]
+    for i in range(4):
+        for j in range(8):
+            pos[j, i] = np.random.normal(mean[i], 0.01)
+
+    print(pos)
 
     data = loaddf('jla_lcparams.txt')
 
@@ -59,5 +107,5 @@ def adjustparams(df):
         args=[ data, data['zcmb'], data['dz'] ]
     )
 
-    sampler.run_mcmc(pos, 2000, progress=True);
+    sampler.run_mcmc(pos, 200, progress=True);
     return sampler
