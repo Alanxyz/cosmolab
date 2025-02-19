@@ -16,27 +16,22 @@ c12 = loadsqmat('jla_vab_covmatrix.dat')
 def log_likelihood(th, x, yz, yerr):
     alpha, beta, mb1, dm = th
     shape, color, mstellar = x['x1'], x['color'], x['mb']
+
+    n = len(x['x1'])
     model = getmodel(alpha, beta, mb1, dm)
     y_model = model(mstellar, shape, color)
     distlum = cosmo.luminosity_distance(yz)
+
+    mb = x['mb']
+    eta = np.column_stack((x['mb'], x['x1'], x['color'])).ravel()
+    cstat = c00 @ np.ones(3, 3)
+    ceta = cstat
+    id = np.identity(n)
+    a = np.tensordot(id, np.array([ 1, alpha, -beta ]))
+    c = a @ ceta @ a.T
     y = 5 * np.log(distlum / (10 * u.pc)) - 5
 
-    cov = c00
-    cov += alpha**2 * c11
-    cov += beta**2 * c22
-    cov += 2 * alpha * c01
-    cov += -2 * beta * c02
-    cov += -2 * alpha * beta * c12
-
-    ddiag = x['dmb']**2 + (alpha * x['dx1'])**2 + (beta * x['dcolor'])**2 + 2 * alpha * x['cov_m_s'] - 2 * beta * x['cov_m_c'] - 2 * alpha * beta * x['cov_s_c']
-    n = 740
-    for i in range(n):
-        cov[i][i] += ddiag[i]
-
-    np.linalg.cholesky(cov)
-
-    sigma2 = yerr**2 + y_model**2
-    chi2 = (y - y_model) ** 2 / sigma2
+    mu = a @ eta - mb
 
     return -0.5 * np.sum(chi2 + np.log(sigma2))
 
