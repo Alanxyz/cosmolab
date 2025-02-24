@@ -6,50 +6,41 @@ import astropy.units as u
 from model import getmodel
 from utils import *
 
-cosmo = FlatLambdaCDM(H0=0.70, Om0=0.229, Tcmb0=2.725)
-
-c00 = loadsqmat('jla_v0_covmatrix.dat')
-c11 = loadsqmat('jla_va_covmatrix.dat')
-c22 = loadsqmat('jla_vb_covmatrix.dat')
-c01 = loadsqmat('jla_v0a_covmatrix.dat')
-c02 = loadsqmat('jla_v0b_covmatrix.dat')
-c12 = loadsqmat('jla_vab_covmatrix.dat')
+ceta = np.load("cstat.npy")
+n = 740
 
 def log_likelihood(th, x, zdat, yerr):
-    alpha, beta, mb1, dm = th
-    shape, color, mstellar = x['x1'], x['color'], x['mb']
+    alpha, beta, mb1, dm, Om0 = th
 
-    n = len(x['x1'])
-    model = getmodel(alpha, beta, mb1, dm)
+    cosmo = FlatLambdaCDM(H0=70, Om0=Om0, Tcmb0=2.725)
+    distlum = cosmo.luminosity_distance(zdat).to_value(u.pc)
+    mudat = 5 * np.log10(distlum) - 5
 
-    distlum = cosmo.luminosity_distance(zdat)
-    mudat = 5 * np.log(distlum / (10 * u.pc)) - 5
-
-    mb = x['mb']
     eta = np.column_stack((x['mb'], x['x1'], x['color'])).ravel()
-
-    cstat = np.block([
-        [c00, c01, c02],
-        [c01, c11, c12],
-        [c02, c12, c22]
-    ])
-    ceta = cstat
-
     id = np.identity(n)
     a = np.tensordot(id, np.array([ 1, alpha, -beta ]), axes = 0).reshape(n, 3 * n)
+
+    mb = np.ones(n) * mb1
+    mb[x['3rdvar'] >= 10] += dm
 
     c = a @ ceta @ a.T
     mu = a @ eta - mb
     res = mu - mudat
-    xi = mu @ c @ mu.T
 
-    return -0.5 * xi
+    cinv = np.linalg.inv(c)
+    xi2 = res.T @ cinv @ res
+
+    return -0.5 * xi2
 
 def log_slikelihood(th, x, zdat, yerr):
     alpha, beta, mb1, dm = th
     shape, color, mstellar = x['x1'], x['color'], x['mb']
     model = getmodel(alpha, beta, mb1, dm)
-    y_model = model(mstellar, shape, color)
+
+
+    mb = mb1
+    y_model = mbstar - (mb - alpha * shape + beta * color)
+
     distlum = cosmo.luminosity_distance(zdat)
     y = 5 * np.log(distlum / (10 * u.pc)) - 5
 
@@ -71,8 +62,8 @@ def log_slikelihood(th, x, zdat, yerr):
     return -0.5 * np.sum(chi2 + np.log(sigma2))
 
 def log_prior(th):
-    alpha, beta, mb1, dm = th
-    if 0.0 < alpha < 0.2 and 2.5 < beta < 3.5 and -0.2 < dm < 0.1 and -20 < mb1 < -18:
+    alpha, beta, mb1, dm, Om0 = th
+    if 0.0 < alpha < 0.2 and 2.5 < beta < 3.5 and -0.2 < dm < 0.1 and -20 < mb1 < -18 and 0.2 < Om0 < 0.4 :
         return 0.0
     else:
         return -np.inf
@@ -81,16 +72,16 @@ def log_probability(th, x, y, yerr):
     lp = log_prior(th)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + log_slikelihood(th, x, y, yerr)
+    return lp + log_likelihood(th, x, y, yerr)
 
 def adjustparams(df):
-    dim = 4
-    walkers = 8
+    dim = 5
+    walkers = 2 * dim
     pos = np.zeros((walkers, dim))
 
-    mean = [0, 3, -19, -0.15]
-    for i in range(4):
-        for j in range(8):
+    mean = [0, 3, -19, -0.15, 0.29]
+    for i in range(dim):
+        for j in range(walkers):
             pos[j, i] = np.random.normal(mean[i], 0.01)
 
     data = loaddf('jla_lcparams.txt')
@@ -103,4 +94,5 @@ def adjustparams(df):
     )
 
     sampler.run_mcmc(pos, 1000, progress=True);
-    return sampler
+    chain = sampler.get_chain(flat=True)
+    np.save("out/chain", chain)
