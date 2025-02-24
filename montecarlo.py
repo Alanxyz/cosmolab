@@ -6,7 +6,7 @@ import astropy.units as u
 from model import getmodel
 from utils import *
 
-ceta = np.load("cstat.npy")
+ceta = np.load("out/cstat.npy")
 n = 740
 
 def log_likelihood(th, x, zdat, yerr):
