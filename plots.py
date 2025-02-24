@@ -31,8 +31,7 @@ def plot_adjust(sol, df):
     )
     plt.show()
 
-def triangle(sampler):
-    flat_samples = sampler.get_chain(discard=1000, thin=15, flat=True)
+def triangle(flat_samples):
     fig = corner.corner(
         flat_samples,
         labels=['a', 'b', 'mb1', 'dm'],

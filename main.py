@@ -8,5 +8,4 @@ from montecarlo import adjustparams
 from plots import triangle
 
 df = loaddf('jla_lcparams.txt')
-sampler = adjustparams(df)
-triangle(sampler)
+adjustparams(df)
