@@ -4,7 +4,9 @@ import numpy as np
 import corner
 
 flat_samples = np.load("out/chain.npy")
-fig = corner.corner(flat_samples[:500],
+n = len(flat_samples)
+s = round(0.80 * n)
+fig = corner.corner(flat_samples[:s],
                     show_titles=True,
                     labels=[
                         "a", "b", "mb", "dm", "Om"

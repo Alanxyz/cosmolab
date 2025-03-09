@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 import numpy as np
 import emcee
 from astropy.cosmology import FlatLambdaCDM
@@ -72,7 +73,7 @@ def log_slikelihood(th, x, zdat, yerr):
 
 def log_prior(th):
     alpha, beta, mb1, dm, Om0 = th
-    if 0.0 < alpha < 0.2 and 2.5 < beta < 3.5 and -0.2 < dm < 0.1 and -20 < mb1 < -18 and 0.2 < Om0 < 0.4 :
+    if -1.0 < alpha < 1.0 and 0.0 < beta < 5.0 and -1.0 < dm < 1.0 and -20 < mb1 < -18 and 0.2 < Om0 < 0.4 :
         return 0.0
     else:
         return -np.inf
@@ -96,13 +97,15 @@ def adjustparams(df):
 
     data = loaddf('jla_lcparams.txt')
 
-    sampler = emcee.EnsembleSampler(
-        walkers,
-        dim,
-        log_probability,
-        args=[ data, data['zcmb'], data['dz'] ]
-    )
+    with Pool() as pool:
+        sampler = emcee.EnsembleSampler(
+            walkers,
+            dim,
+            log_probability,
+            args=[ data, data['zcmb'], data['dz'] ],
+            pool=pool
+        )
+        sampler.run_mcmc(pos, 1000, progress=True);
 
-    sampler.run_mcmc(pos, 1000, progress=True);
     chain = sampler.get_chain(flat=True)
     np.save("out/chain", chain)
