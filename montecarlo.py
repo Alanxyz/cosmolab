@@ -3,17 +3,15 @@ import numpy as np
 import emcee
 from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
-
-from model import getmodel
 from utils import *
 
-ceta = np.load("out/cstat.npy")
-c00 = loadsqmat('jla_v0_covmatrix.dat')
-c11 = loadsqmat('jla_va_covmatrix.dat')
-c22 = loadsqmat('jla_vb_covmatrix.dat')
-c01 = loadsqmat('jla_v0a_covmatrix.dat')
-c02 = loadsqmat('jla_v0b_covmatrix.dat')
-c12 = loadsqmat('jla_vab_covmatrix.dat')
+ceta = np.load('out/cstat.npy')
+c00 = loadsqmat('dat/jla_v0_covmatrix.dat')
+c11 = loadsqmat('dat/jla_va_covmatrix.dat')
+c22 = loadsqmat('dat/jla_vb_covmatrix.dat')
+c01 = loadsqmat('dat/jla_v0a_covmatrix.dat')
+c02 = loadsqmat('dat/jla_v0b_covmatrix.dat')
+c12 = loadsqmat('dat/jla_vab_covmatrix.dat')
 n = 740
 
 def log_likelihood(th, x, zdat, yerr):
@@ -57,14 +55,20 @@ def log_slikelihood(th, x, zdat, yerr):
     # Comparation
     res = mu - mudat
 
-    cov = c00
-    cov += alpha**2 * c11
-    cov += beta**2 * c22
-    cov += 2 * alpha * c01
-    cov += -2 * beta * c02
-    cov += -2 * alpha * beta * c12
+    cov = c00  \
+        + alpha**2 * c11 \
+        + beta**2 * c22 \
+        + 2 * alpha * c01 \
+        + -2 * beta * c02 \
+        + -2 * alpha * beta * c12
 
-    ddiag = x['dmb']**2 + (alpha * x['dx1'])**2 + (beta * x['dcolor'])**2 + 2 * alpha * x['cov_m_s'] - 2 * beta * x['cov_m_c'] - 2 * alpha * beta * x['cov_s_c']
+    ddiag = x['dmb']**2 \
+        + (alpha * x['dx1'])**2 \
+        + (beta * x['dcolor'])**2 \
+        + 2 * alpha * x['cov_m_s'] \
+        - 2 * beta * x['cov_m_c'] \
+        - 2 * alpha * beta * x['cov_s_c']
+
     cov += np.diagflat(ddiag)
 
     covinv = np.linalg.inv(cov)
@@ -84,28 +88,26 @@ def log_probability(th, x, y, yerr):
         return -np.inf
     return lp + log_slikelihood(th, x, y, yerr)
 
-def adjustparams(df):
-    dim = 5
-    walkers = 2 * dim
-    #walkers = 100
-    pos = np.zeros((walkers, dim))
+dim = 5
+walkers = 2 * dim
+pos = np.zeros((walkers, dim))
 
-    mean = [0.140, 3.139, -19.04, -0.060, 0.289]
-    for i in range(dim):
-        for j in range(walkers):
-            pos[j, i] = np.random.normal(mean[i], 0.001)
+mean = [0.140, 3.139, -19.04, -0.060, 0.289]
+for i in range(dim):
+    for j in range(walkers):
+        pos[j, i] = np.random.normal(mean[i], 0.001)
 
-    data = loaddf('jla_lcparams.txt')
+data = loaddf('dat/jla_lcparams.txt')
 
-    with Pool() as pool:
-        sampler = emcee.EnsembleSampler(
-            walkers,
-            dim,
-            log_probability,
-            args=[ data, data['zcmb'], data['dz'] ],
-            pool=pool
-        )
-        sampler.run_mcmc(pos, 1000, progress=True);
+with Pool() as pool:
+    sampler = emcee.EnsembleSampler(
+        walkers,
+        dim,
+        log_probability,
+        args=[ data, data['zcmb'], data['dz'] ],
+        pool=pool
+    )
+    sampler.run_mcmc(pos, 1000, progress=True);
 
-    chain = sampler.get_chain(flat=True)
-    np.save("out/chain", chain)
+chain = sampler.get_chain(flat=True)
+np.save("out/chain", chain)

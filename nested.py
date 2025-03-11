@@ -3,21 +3,8 @@ from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
 import pypolychord as pc
 from pypolychord.settings import PolyChordSettings
+from utils import *
 
-def loaddf(filename):
-    with open(filename, 'r') as f:
-        firstline = f.readline().rstrip()
-        headers = firstline[1:].split(' ')
-        df = np.genfromtxt(filename, dtype=None, names=headers)
-        return df
-
-def loadsqmat(filename):
-    dat = np.loadtxt(filename)
-    n = int(dat[0])
-    mat = dat[1:].reshape(n, n)
-    return mat
-
-# Cargar datos de covarianza
 c00 = loadsqmat('dat/jla_v0_covmatrix.dat')
 c11 = loadsqmat('dat/jla_va_covmatrix.dat')
 c22 = loadsqmat('dat/jla_vb_covmatrix.dat')
@@ -28,7 +15,6 @@ n = 740
 
 data = loaddf('dat/jla_lcparams.txt')
 
-# Definir log-likelihood
 def loglikelihood(th):
     alpha, beta, mb1, dm, Om0 = th
     
@@ -74,9 +60,8 @@ ndim = 5
 settings = PolyChordSettings(ndim, 0)
 settings.file_root = 'jla_polychord'
 settings.nlive = 100
-settings.num_repeats = 20
+settings.num_repeats = 1000
 settings.do_clustering = True
 
 # Ejecutar PolyChord
 pc.run_polychord(loglikelihood, ndim, 0, settings, prior=prior)
-
