@@ -1,12 +1,5 @@
 Los siguientes códigos están pensados para ser ejecutados en un servidor local. Primero hay que entrar al servidor
 
-```
-pass dciserver -c
-ssh 148.214.16.7
-conda activate desi
-```
-
-
 # Setup
 
 Necesitaremos de algunas librerias
