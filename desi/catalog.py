@@ -9,7 +9,7 @@ from sparcl.client import SparclClient
 
 table = Table.read('dat/zall-pix-fuji.fits')
 table['HEALPIX']
-mask = table['SPECTYPE'] == 'GALAXY'
+mask = table['SPECTYPE'] == 'STAR'
 table = table[mask]
 targetid = table['TARGETID']
 x = list(targetid)
@@ -23,14 +23,7 @@ def getdata(a, b):
 
 #print("FASE 1")
 #d = getdata(0, 100_000)
-#np.save('0-100_000', d)
-#print("FASE 2")
-#d = getdata(100_000, 200_000)
-#np.save('100_000-200_000', d)
-#print("FASE 3")
-#d = getdata(200_000, 300_000)
-#np.save('200_000-300_000', d)
-#print("FASE 4")
-#d = getdata(300_000, 400_000)
-#np.save('300_000-400_000', d)
-
+#np.save('star_0-100_000', d)
+print("FASE 3")
+d = getdata(150_000, 200_000)
+np.save('star_150_000-200_000', d)
