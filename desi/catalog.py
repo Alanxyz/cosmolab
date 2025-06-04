@@ -1,7 +1,6 @@
 import os
 import sys
 import numpy as np
-
 from astropy.io import fits
 from astropy.table import Table
 from astropy.convolution import convolve, Gaussian1DKernel
@@ -21,9 +20,9 @@ def getdata(a, b):
     res = client.retrieve_by_specid(specid_list = x[a:b], include = inc, dataset_list = ['DESI-DR1'])
     return res.data
 
-#print("FASE 1")
-#d = getdata(0, 100_000)
-#np.save('star_0-100_000', d)
-print("FASE 3")
-d = getdata(150_000, 200_000)
-np.save('star_150_000-200_000', d)
+for n in range(20):
+    print(f'FASE {n}')
+    a = 50_000 * n
+    b = a + 49_999
+    d = getdata(a, b)
+    np.save(f'star_{a}-{b}', d)
