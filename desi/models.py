@@ -55,15 +55,15 @@ def buildmodel2(inputlength, numclasses):
         MaxPooling1D(2),
         BatchNormalization(),
 
-        Conv1D(16, 7, activation='relu', input_shape=(inputlength, 1)),
+        Conv1D(16, 7, activation='relu'),
         MaxPooling1D(2),
         BatchNormalization(),
 
-        Conv1D(16, 7, activation='relu', input_shape=(inputlength, 1)),
+        Conv1D(16, 7, activation='relu'),
         MaxPooling1D(2),
         BatchNormalization(),
 
-        Conv1D(16, 7, activation='relu', input_shape=(inputlength, 1)),
+        Conv1D(16, 7, activation='relu'),
         MaxPooling1D(2),
         BatchNormalization(),
 
