@@ -23,6 +23,7 @@ data = [
 data = np.array(data)
 
 fluxes = [d['flux'] for d in data]
+redshifts = [d['redshift'] for d in data]
 labels = [d['subtype'] for d in data]
 
 target_len = max(len(f) for f in fluxes)
@@ -50,7 +51,7 @@ history = model.fit(
     xtrain,
     ytrain,
     validation_data=(xtest, ytest),
-    epochs=4,
+    epochs=20,
     batch_size=64
 )
 
