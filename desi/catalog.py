@@ -16,11 +16,12 @@ x = [ int(y) for y in x ]
 client = SparclClient()
 
 def getdata(a, b):
-    inc = ['specid', 'flux', 'wavelength', 'redshift', 'subtype']
+    inc = ['flux', 'wavelength', 'redshift', 'subtype']
     res = client.retrieve_by_specid(specid_list = x[a:b], include = inc, dataset_list = ['DESI-DR1'])
     return res.data
 
-for n in range(20):
+m = len(x) // 50_000
+for n in range(m):
     print(f'FASE {n}')
     a = 50_000 * n
     b = a + 49_999
